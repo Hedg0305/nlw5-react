@@ -6,9 +6,11 @@ import { ptBR } from 'date-fns/locale';
 import {useRouter} from 'next/router'
 
 import { api } from '../../services/api';
-import { convertDUrationToTimeString } from '../../utils/convertDurationToTimeString';
+import { convertDurationToTimeString } from '../../utils/convertDurationToTimeString';
 
 import styles from './episode.module.scss'
+import { route } from 'next/dist/next-server/server/router';
+import Link from 'next/link';
 
 type Episode = {
   id: string;
@@ -22,19 +24,20 @@ type Episode = {
   publishedAt: string;
 }
 
-type EpisodeProps = { 
+type EpisodeProps = {
   episode: Episode
 }
 
 export default function Episode({episode}:EpisodeProps) {
-  const router = useRouter();
-  
   return (
     <div className={styles.episode}>
       <div className={styles.thumbnailContainer}>
-        <button type="button">
-          <img src="/arrow-left.svg" alt="Voltar" />
-        </button>
+        <Link href="/">
+          <button type="button">
+            <img src="/arrow-left.svg" alt="Voltar" />
+            </button>
+        </Link>
+        
         <Image
           width={700}
           height={160}
@@ -60,8 +63,24 @@ export default function Episode({episode}:EpisodeProps) {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  const { data } = await api.get('episodes', {
+    params: {
+      _limit: 2,
+      _sort: 'published_at',
+      _order: 'desc'
+    }
+  });
+
+  const paths = data.map(episode => {
+    return {
+      params: {
+        slug: episode.id
+      }
+    }
+  })
+  
   return {
-    paths: [],
+    paths,
     fallback: 'blocking'
   }
 }
@@ -80,15 +99,15 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
     members: data.members,
     publishedAt: format(parseISO(data.published_at), 'd MMM yy', { locale: ptBR }),
     duration: Number(data.file.duration),
-    durationAsString: convertDUrationToTimeString(Number(data.file.duration)),
+    durationAsString: convertDurationToTimeString(Number(data.file.duration)),
     description: data.description,
     url: data.file.url
   }
   
   return {
     props: {
-      episode
+      episode,
     },
-    revalidate: 60*60*24
+    revalidate: 60 * 60 * 24,
   }
 }

@@ -1,13 +1,15 @@
 import { GetServerSideProps } from 'next';
+import { useContext } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 
 import { format, parseISO } from 'date-fns'
 import ptBR from 'date-fns/locale/pt-BR'
 import {api} from '../services/api'
-import { convertDUrationToTimeString } from '../utils/convertDurationToTimeString';
+import { convertDurationToTimeString } from '../utils/convertDurationToTimeString';
 
 import styles from './home.module.scss';
+import { PlayerContext } from '../contexts/PlayerContext';
 
 type Episode = {
   id: string;
@@ -17,7 +19,7 @@ type Episode = {
   duration: number;
   durationAsString: string;
   url: string;
-  publishedAt: string
+  publishedAt: string;
 }
 
 type HomeProps = {
@@ -26,7 +28,9 @@ type HomeProps = {
 }
 
 export default function Home({latestEpisodes, allEpisodes}: HomeProps) {
+  const { play } = useContext(PlayerContext);
   
+
   return (
     <div className={styles.homePage}>
       <section className={styles.latestEpisodes}>
@@ -52,7 +56,8 @@ export default function Home({latestEpisodes, allEpisodes}: HomeProps) {
                   <span>{episode.publishedAt}</span>
                   <span>{episode.durationAsString}</span>
                 </div>
-                <button type="button">
+
+                <button type="button" onClick={() => play(episode)}>
                   <img src="/play-green.svg" alt="Tocar episódio"/>
                 </button>
               </li>
@@ -132,7 +137,7 @@ export const getStaticProps: GetServerSideProps = async () =>{
       members: episode.members,
       publishedAt: format(parseISO(episode.published_at), 'd MMM yy', { locale: ptBR }),
       duration: Number(episode.file.duration),
-      durationAsString: convertDUrationToTimeString(Number(episode.file.duration)),
+      durationAsString: convertDurationToTimeString(Number(episode.file.duration)),
       description: episode.description,
       url: episode.file.url
     }
